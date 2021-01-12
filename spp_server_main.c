@@ -333,7 +333,7 @@ U8 sectic = TIC_TIMER_PERSEC;
 
          ledseq();  // step the LED player
          fbseq(); // Step the feedback player (Haptic and buzzer)
-         //bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
+         bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
 
          if (v3sleep.sleepsec) 
          {

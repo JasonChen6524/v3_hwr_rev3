@@ -161,10 +161,14 @@ U8 i;
    /* Configure USARTs for basic I2S operation 8000Hz*/
    init = (USART_InitI2s_TypeDef) USART_INITI2S_DEFAULT;
    init.sync.baudrate = SAMPRATE*32;
+   init.sync.enable  = usartEnable;
+   
    USART_InitI2s(USART0, &init); 
 
+   /* Configure USARTs for basic I2S operation 8000Hz*/
    init = (USART_InitI2s_TypeDef) USART_INITI2S_DEFAULT;
    init.sync.baudrate = SAMPRATE*32;
+   init.sync.enable  = usartEnable;
    USART_InitI2s(USART2, &init);
    
    SinOff();   // mute and disable NVIC USART IRQ
@@ -196,6 +200,7 @@ void USART0_TX_IRQHandler(void)
    {
       USART_TxDouble(USART0,getSin(&sinosc[0]));
       USART_TxDouble(USART2,getSin(&sinosc[2]));
+      sinosc[0].sample = USART_RxDoubleGet(USART2);
    }
    else 
    {

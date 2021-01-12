@@ -33,6 +33,7 @@
 //#include "MAX14676E.h"
 #include "retargetswo.h"
 #include "mscflash.h"
+#include "app.h"
 
 extern void bpt_init(void);  // temporarily put here, should go elsewhere
 
@@ -55,7 +56,9 @@ void initBoard(void)
   initSPI();
   v3_init();  //keep after flash_init() and initSPI();
   initI2S();
-  //bpt_init(); // bio-sensor initilization
+  /* Initialize debug prints. Note: debug prints are off by default. See DEBUG_LEVEL in app.h */
+  initLog();                                                        // have to call the init before calling bpt_init()
+  bpt_init(); // bio-sensor initilization
 
 }
 

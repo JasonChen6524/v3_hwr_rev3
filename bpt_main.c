@@ -358,7 +358,7 @@ void bpt_main(void)
 				else
 				{
 					uint32_t count_tick = calibrationTimer_read();
-					if( count_tick > 100 )
+					if( count_tick > 60 )
 					{
 						appState =  ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT;//ST_EXAMPLEUSER_TIMEOUT;
 						break;
@@ -378,7 +378,7 @@ void bpt_main(void)
 				calibrationTimer_stop();
 				SH_Max3010x_stop(0);
 				measurement_count++;
-				if(measurement_count > 2)
+				if(measurement_count > 1)
 				{
 					measurement_count = 0;
 					printLog("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Calibration. \r\n");

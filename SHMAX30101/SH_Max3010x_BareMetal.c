@@ -239,6 +239,18 @@ static void bpt_data_rx(uint8_t* data_ptr) {
 		}
 	}
 
+	if(re_trigger >= 100)
+	{
+		if((sample.sys_bp != 0)&&(sample.dia_bp != 0))
+		{
+			if((sample.hr == 0)||(sample.spo2 == 0))
+			{
+			  re_trigger = 0;
+			  appState  = ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT;//ST_EXAMPLEUSER_FAILURE;
+			}
+		}
+	}
+
 //  fill in v3status message 
    v3status.bio_status = sample.status;
    v3status.bio_sys_bp = sample.sys_bp;

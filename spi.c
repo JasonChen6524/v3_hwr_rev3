@@ -192,22 +192,3 @@ U16 address;
 }
 
 
-#if 0
-void spi_cmd_test(void)
-{
-U8 txBuffer[6] = { FLASH_CMD_PP, 0, 0, 0x80,0xAA, 0x10};
-U8 rxbuffer[6];
-   
-   //spi_cmd_ce();   // erase
-   while(spi_cmd_busy()){}; 
-   spi_cmd_wren();
-   SPIDRV_MTransmitB(handle, txBuffer,6); // write flash
-   while(spi_cmd_busy()){};
-
-   spi_cmd_read(0x0001,&v3msgflashU);
-   
-   //txBuffer[0] = FLASH_CMD_READ   ;
-   //SPIDRV_MTransferB(handle, txBuffer, rxbuffer, 5);   
-   
-}
-#endif

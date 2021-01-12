@@ -38,6 +38,7 @@ struct sin_osc
     float y0;
     float y1;
     float y2;
+	U16 sample;
  };
  
 extern struct sin_osc sinosc[4];
@@ -81,7 +82,8 @@ typedef enum  // order is important for VM state machine override code
    V3_STATE_LOWPOWER,
    V3_STATE_IDLE,
    V3_STATE_CHRG,
-   V3_STATE_CHRGW
+   V3_STATE_CHRGW,
+   V3_STATE_OTA
 } V3_STATE_TypeDef;
 
 // V3 SPP command list
@@ -103,7 +105,8 @@ typedef enum
    V3_CMD_NACK,    // Bad Checksum or other error
    V3_CMD_SET,	// set variables
    V3_CMD_MOD,	//Modify Combo, pause resume or intensity change
-   V3_CMD_SLEEP
+   V3_CMD_SLEEP,
+   V3_CMD_OTADAT
 } V3_CMD_TypeDef;
 
 //connections emueration
@@ -324,6 +327,18 @@ struct v3_sleep	// night time treatment
 
 extern struct v3_sleep v3sleep;
 
+
+struct v3_otadat
+{
+   U16 magic;
+   U8 cmd;
+   U8 len;
+   U16 handle;
+   U16 sum;    // lower 16 bits of sum of entire message packet with sum = 0;
+   U32 address; // V3 flash memory address
+   U8 data[V3_MAX_SIZE-V3_HDR_SIZE-sizeof(U32)];	
+};
+
 union v3_message_UNION
 {
     U8 v3_buf8[V3_MAX_SIZE];
@@ -343,6 +358,7 @@ union v3_message_UNION
    struct v3_sleep   v3sleep;
    //struct v3_message v3ack;
    struct v3_message v3nack;
+   struct v3_otadat  v3otadat;
 } ;
 
 extern union v3_message_UNION v3msgU;

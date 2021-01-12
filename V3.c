@@ -19,6 +19,7 @@
 #include "MAX14676E.h"
 //#include "em_rmu.h"
 //#include "core_cm33.h"
+#include "em_usart.h"
 
 
 void v3_proc_message(union v3_message_UNION * pv3msgU);
@@ -176,7 +177,7 @@ U8  qSize, buftail, i;
    // no need to mask tail because size is 256 and 8 bit variable.
 
 // now message is in UNION, process message  
-#if 0
+#if 1
    if ( v3_get_sum( &v3msgU )) v3_proc_message(&v3msgU);  //checksum is correct
       else v3_nack_msg( &v3msgU );  //checksum is not correct
 #else 
@@ -204,7 +205,8 @@ U8 size;
 void v3_proc_message(union v3_message_UNION * pv3msgU)
 {
 struct rgbcolor ledset; 
-     
+static U16 otaflashaddr;
+
    switch (pv3msgU->v3msg.cmd)   // some messages give ack, some a response
                                  // consider an array of functions if the switch gets too big
    {
@@ -289,11 +291,27 @@ struct rgbcolor ledset;
       flash_write(); // update flash on processor IC
       break;
 
-      // need to implement status message, solicited
-
-      default:
-      break;
+      case V3_CMD_OTADAT:
+      if (v3status.state != V3_STATE_OTA)
+      {
+         v3status.state = V3_STATE_OTA;
+         v3Handle = V3_NO_HANDLE; 
+         v3status.inithandle = V3_NO_HANDLE;    // No handle
+         otaflashaddr = 0;
+      }
+      spi_cmd_write(&otaflashaddr, pv3msgU); // SPI flash store the message at location otaflashaddr
+      spi_cmd_read(otaflashaddr,pv3msgU);
+      if (v3_get_sum( &v3msgU )) v3_ack_nohandle(pv3msgU);
+      else v3_nack_msg( &v3msgU );  //checksum is not correct 
+      otaflashaddr++;
       
+      // code stub to jump to reset vector of boot loader
+      //if (v3msgU.v3otadat.address) = 0xFFFFFFFF - jump to bootloader entry tbd
+      break;
+
+     default:
+     break;
+
    }
 
 }
@@ -432,7 +450,7 @@ static U8 led_sm = LED_SM_START, wait = 0;
 #if 0 // remove after testing
 // TEST CODE FORCE SINE WAVES
 v3status.state = V3_STATE_COMBO;
-v3combo.inten = 34;
+v3combo.inten = 10;
 v3combo.time = 1000;
 v3combo.b1 = 2500;
 v3combo.b2 = 1500;
@@ -590,9 +608,10 @@ v3combo.combonum = 0;
       
    v3status.temp0 = Temperature(MAX30208A_ADR); // read temperature sensor A
    // TEMPORARY - populate second sensor field with first until second sensor HW is available
-   v3status.temp1 = v3status.temp0; 
-   //v3status.temp1 = Temperature(MAX30208B_ADR); // read temperature sensor B
+   //v3status.temp1 = v3status.temp0; 
+   v3status.temp1 = Temperature(MAX30208B_ADR); // read temperature sensor B
 
+#if 0
    printLog("Temp A %d\r\n",v3status.temp0/20);
    printLog("Temp B %d\r\n",v3status.temp1/20);
    printLog("CHRG %d\r\n", v3status.batsoc);
@@ -601,6 +620,9 @@ v3combo.combonum = 0;
    printLog("RATE %d\r\n", v3status.crate);
    printLog("STATA 0x%X\r\n", (U16)v3status.statusa);
    printLog("STATB 0x%X\r\n", (U16)v3status.statusb);   
+
+   printLog("USART %d\r\n",sinosc[0].sample);
+#endif
    
    if (v3combo.awakesec) v3_ack_handle((union v3_message_UNION*)&v3status);  // Send status and store message, unsolicited 
       else v3_ack_nohandle((union v3_message_UNION*)&v3status);  // Send status message, unsolicited
