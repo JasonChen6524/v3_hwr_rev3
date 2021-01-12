@@ -322,12 +322,5 @@ int ssx_set_algo_cfg(int algo_idx, int cfg_idx, uint8_t *cfg, int cfg_sz);
 
 /*DEMO RELATED DATA TO REPORT RESULTS FROM MAIN APPLICATION*/
 extern uint8_t  bptMesurementProgress    ;
-extern uint8_t  bptMesurementHR          ;
-extern uint8_t  bptMesurementDiaPressure ;
-extern uint8_t  bptMesurementSysPressure ;
-extern uint16_t bptMesurementlBoodOxygen ;
-
-
-
 
 #endif

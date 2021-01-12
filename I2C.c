@@ -129,7 +129,7 @@ void initI2C(void)
   // Using default settings
   I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
 
-  //i2cInit.freq = 10000;
+  //i2cInit.freq = 400000;//10000;
 
   // Using PA5 (SCL) and PA6 (SDA)
   GPIO_PinModeSet(BSP_I2C0_SCL_PORT, BSP_I2C0_SCL_PIN, gpioModeWiredAndPullUpFilter, 1);

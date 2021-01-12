@@ -40,7 +40,7 @@
 #include "I2C.h"
 #include <stdio.h>
 #include <string.h>
-
+#include "sl_sleeptimer.h"
 
 #define SS_I2C_8BIT_SLAVE_ADDR      0xAA
 #define SENSORHUB_I2C_ADRESS        SS_I2C_8BIT_SLAVE_ADDR
@@ -237,7 +237,7 @@ void mfio_pin_output(void)
 	ExpSetPinsOutput(MFIO_BIT);
 }
 
-#if 1
+#if 0
 static void delay_1ms(void)
 {
     uint32_t count_1ms = 0;
@@ -252,19 +252,32 @@ static void delay_1ms(void)
 
 void wait_ms(uint16_t wait_ms)
 {
-	if(v3status.spp == 2)
-	{
-	  sl_sleeptimer_delay_millisecond(wait_ms);
-	}
-	else
+	//if(v3status.spp == 2)
+	//{
+	//  sl_sleeptimer_delay_millisecond(wait_ms);
+	//}
+	//else
+#if 0
 	{
 	  uint16_t ms_count = 0;
 	  if(wait_ms == 0) return;
-	  while(ms_count++ < wait_ms)
+	  while(ms_count < wait_ms)
 	  {
 		delay_1ms();
+		ms_count++;
 	  }
 	}
+#else
+	uint32_t delay = sl_sleeptimer_ms_to_tick(wait_ms);
+	uint32_t curren_tick1 = sl_sleeptimer_get_tick_count();
+	uint32_t diff = 0;
+	while(1)
+	{
+		diff = sl_sleeptimer_get_tick_count() - curren_tick1;
+	    if(diff > delay)
+	    	return;
+	}
+#endif
 }
 
 void sh_irq_handler(void)
@@ -280,7 +293,7 @@ void sh_irq_handler(void)
 /**************************************************************************//**
  * @brief Setup GPIO interrupt for pushbuttons.
  *****************************************************************************/
-#define USING_INT_PC4
+#define USING_INT_PC5
 static void mfioGPIOSetup(void)
 {
   /* Configure GPIO Clock */
@@ -1316,8 +1329,6 @@ static void fifo_sample_size(int data_type_, int *sample_size)
 
 int sh_ss_execute_once( uint8_t *databuf , int databufLen , int *nSamplesRead){
 
-  //m_irq_received = sh_get_mfio();
-  //printLog("count_tick = %d, m_irq_received = %d\r\n", (int)calibrationTimer_read(), m_irq_received);
     if(m_irq_received == false)
 	{
 		  *nSamplesRead = 0;

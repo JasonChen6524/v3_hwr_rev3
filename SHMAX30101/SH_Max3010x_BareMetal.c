@@ -132,11 +132,6 @@ typedef struct {
 
 /*DEMO RELATED DATA TO REPORT RESULTS FROM MAIN APPLICATION*/
 uint8_t  bptMesurementProgress       = 0;
-uint8_t  bptMesurementHR             = 0;
-uint8_t  bptMesurementDiaPressure    = 0;
-uint8_t  bptMesurementSysPressure    = 0;
-uint16_t bptMesurementlBoodOxygen    = 0;
-
 
 static uint8_t is_agc_usage_required = ENABLE_AGC_USAGE;
 
@@ -157,20 +152,20 @@ static void bpt_data_rx(uint8_t* data_ptr) {
 
 	//See API doc for data format
     bpt_mode1_2_data sample;
-	sample.status = data_ptr[0];
-	sample.prog = data_ptr[1];
-	sample.hr = (data_ptr[2] << 8) | data_ptr[3];
-	sample.sys_bp = data_ptr[4];
-	sample.dia_bp = data_ptr[5];
-	sample.spo2 = (data_ptr[6] << 8) | data_ptr[7];
-	sample.r_value = (data_ptr[8] << 8) | data_ptr[9];
+	sample.status     = data_ptr[0];
+	sample.prog       = data_ptr[1];
+	sample.hr         = (data_ptr[2] << 8) | data_ptr[3];
+	sample.sys_bp     = data_ptr[4];
+	sample.dia_bp     = data_ptr[5];
+	sample.spo2       = (data_ptr[6] << 8) | data_ptr[7];
+	sample.r_value    = (data_ptr[8] << 8) | data_ptr[9];
 	sample.pulse_flag = data_ptr[10];
-	sample.ibi = (data_ptr[11] << 8) | data_ptr[12];
-	sample.spo2_conf = data_ptr[13];
-	sample.bpt_rpt = data_ptr[14];
-	sample.spo2_rpt = data_ptr[15];
-	sample.end_bpt = data_ptr[16];
-
+	sample.ibi        = (data_ptr[11] << 8) | data_ptr[12];
+	sample.spo2_conf  = data_ptr[13];
+	sample.bpt_rpt    = data_ptr[14];
+	sample.spo2_rpt   = data_ptr[15];
+	sample.end_bpt    = data_ptr[16];
+#if 1
 	uint16_t spo21 = sample.spo2/10;
 	uint16_t spo22 = sample.spo2 - spo21 * 10;
 	if(appState  == ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT)
@@ -205,13 +200,9 @@ static void bpt_data_rx(uint8_t* data_ptr) {
 				//,sample.spo2_conf, sample.ibi, sample.pulse_flag, sample.bpt_rpt, sample.spo2_rpt, sample.end_bpt
 				);
 	}
-
+#endif
 	bptMesurementProgress    = sample.prog;
-	bptMesurementHR          = sample.hr;
-	bptMesurementSysPressure = sample.sys_bp;
-	bptMesurementDiaPressure = sample.dia_bp;
-	bptMesurementlBoodOxygen = sample.spo2;
-
+#if 0
   //if((sample.status == 1)&&(sample.prog == 100))
 	if(sample.prog == 100)
 	{
@@ -233,33 +224,32 @@ static void bpt_data_rx(uint8_t* data_ptr) {
 				if(re_trigger > 500)
 				{
 				  re_trigger = 0;
-				  appState  = ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT;//ST_EXAMPLEUSER_FAILURE;
+				  appState  = ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT;//ST_EXAMPLEUSER_FAILURE;
 				}
 			}
 		}
 	}
 
-	if(re_trigger >= 100)
-	{
-		if((sample.sys_bp != 0)&&(sample.dia_bp != 0))
-		{
-			if((sample.hr == 0)||(sample.spo2 == 0))
-			{
-			  re_trigger = 0;
-			  appState  = ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT;//ST_EXAMPLEUSER_FAILURE;
-			}
-		}
-	}
-
-//  fill in v3status message 
-   v3status.bio_status = sample.status;
-   v3status.bio_sys_bp = sample.sys_bp;
-   v3status.bio_dia_bp = sample.dia_bp;
-   v3status.bio_prog = sample.prog;
-   v3status.bio_hr = sample.hr; 
-   v3status.bio_spo2 = sample.spo2;
-   v3status.bio_state = (uint8_t) appState;
-
+    if(re_trigger >= 100)
+    {
+        if((sample.sys_bp != 0)&&(sample.dia_bp != 0))
+        {
+            if((sample.hr == 0)||(sample.spo2 == 0))
+            {
+              re_trigger = 0;
+              appState  = ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT;//ST_EXAMPLEUSER_FAILURE;
+            }
+        }
+    }
+#endif
+  //fill in v3status message
+    v3status.bio_status = sample.status;
+    v3status.bio_sys_bp = sample.sys_bp;
+    v3status.bio_dia_bp = sample.dia_bp;
+    v3status.bio_prog   = sample.prog;
+    v3status.bio_hr     = sample.hr;
+    v3status.bio_spo2   = sample.spo2;
+    v3status.bio_state  = (uint8_t) appState;
 }
 
 static void agc_data_rx(uint8_t* data_ptr) {
@@ -356,7 +346,7 @@ int SH_Max3010x_default_init( const int algoExecutionMode, const int agc_usage )
 		p_glbl_max3010x_status_track->sample_count_enabled = false;
 	}
 
-	status = sh_set_fifo_thresh(15);
+	status = sh_set_fifo_thresh(8);                                               //Jason, 4, 8, 15
 	if (status != 0) {
 		printLog("\r\n err=%d\r\n", COMM_GENERAL_ERROR);
 		printLog("FAILED at line %d\n", __LINE__);

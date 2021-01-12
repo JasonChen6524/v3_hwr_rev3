@@ -38,7 +38,7 @@ struct sin_osc
     float y0;
     float y1;
     float y2;
-	U16 sample;
+    U16 sample;
  };
  
 extern struct sin_osc sinosc[4];
@@ -173,26 +173,26 @@ extern struct v3_info v3info;
 
 struct v3_status	// rearrange and pack later adding to the end for now
 {
-   U16 magic;  // key number
-   U8 cmd;     // message command - definition of payload data
-   U8 len;     // total message payload is V3_MAX_SIZE-V3_HDR_SIZE
-   U16 handle; // rolling 16 bit message handle
-   U16 sum;    // lower 16 bits of sum of entire message packet with sum = 0;
-   U32 time;  // report device time
+   U16 magic;      // key number
+   U8 cmd;         // message command - definition of payload data
+   U8 len;         // total message payload is V3_MAX_SIZE-V3_HDR_SIZE
+   U16 handle;     // rolling 16 bit message handle
+   U16 sum;        // lower 16 bits of sum of entire message packet with sum = 0;
+   U32 time;       // report device time
    U16 inithandle; // handle of the init
-   U8 batsoc;   // 8 bit state of charge value read from PMIC fuel Gauge - 0 to 100
-   U8 statusb;	// PMIC StatusB register
-   U16 batvcell;// 16 bit battery voltage value read from PMIC fuel Gauge, 1 LSb = 78.125uV
-   U16 temp0;	// Tethered sensor 0 (Left) = deg C *200
-   U16 temp1;	// Tethered sensor 1 (Right) = deg C *200
-   U16 temp2;	// Alternate TEMP sensor TBD
+   U8 batsoc;      // 8 bit state of charge value read from PMIC fuel Gauge - 0 to 100
+   U8 statusb;	   // PMIC StatusB register
+   U16 batvcell;   // 16 bit battery voltage value read from PMIC fuel Gauge, 1 LSb = 78.125uV
+   U16 temp0;	   // Tethered sensor 0 (Left) = deg C *200
+   U16 temp1;	   // Tethered sensor 1 (Right) = deg C *200
+   U16 temp2;	   // Alternate TEMP sensor TBD
    U16 temp3;
-   U8 error;   // run time error codes
-   U8 state;  // Treatment state V3 is in
-   U8 spp;	// BLE connection state
-   U8 conn;   // connection bit field for various cables
-   U16 crate;	//  Rate of battery charge or discharge, 1 LSb - 0.208% per hour
-   U8 statusa;	// PMIC StatusA register  
+   U8 error;       // run time error codes
+   U8 state;       // Treatment state V3 is in
+   U8 spp;	       // BLE connection state
+   U8 conn;        // connection bit field for various cables
+   U16 crate;	   //  Rate of battery charge or discharge, 1 LSb - 0.208% per hour
+   U8 statusa;	   // PMIC StatusA register
    U8 bio_status;
    U8 bio_sys_bp;
    U8 bio_dia_bp;
@@ -330,13 +330,13 @@ extern struct v3_sleep v3sleep;
 
 struct v3_otadat
 {
-   U16 magic;
-   U8 cmd;
-   U8 len;
-   U16 handle;
-   U16 sum;    // lower 16 bits of sum of entire message packet with sum = 0;
-   U32 address; // V3 flash memory address
-   U8 data[V3_MAX_SIZE-V3_HDR_SIZE-sizeof(U32)];	
+	U16 magic;
+	U8 cmd;
+	U8 len;
+	U16 handle;
+	U16 sum;    // Lower 16 bits of sum of entire messsage packet with sum = 0;
+	U32 address; // V3 flash memory address;
+	U8 data[V3_MAX_SIZE-V3_HDR_SIZE-sizeof(U32)];
 };
 
 union v3_message_UNION

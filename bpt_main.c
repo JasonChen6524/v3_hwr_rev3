@@ -77,14 +77,14 @@
  *
  ***********************************************************************************/
 
-
+#include "Global.h"
 #include "SHComm.h"
 #include "SH_Max3010x_BareMetal.h"
 
 #include <stdbool.h>
 //#include "app.h"
+#include "V3.h"
 #include "sl_sleeptimer.h"
-#include "Global.h"
 
 #define WAIT_SENSORHUB_STABLE_BOOTUP_MS  ((uint32_t)2000)
 
@@ -99,11 +99,7 @@ int hostMode = HOSTMODEAPPLICATION;
 demo_appstate_t appState  = ST_COMMAND_MODE;
 //static demo_appstate_t appPrevState;     Jason
 
-extern uint8_t  bptMesurementProgress    ;
-//extern uint8_t  bptMesurementHR          ;
-//extern uint8_t  bptMesurementDiaPressure ;
-//extern uint8_t  bptMesurementSysPressure ;
-//extern uint16_t bptMesurementlBoodOxygen ;
+extern uint8_t  bptMesurementProgress;
 
 static struct{
 	uint32_t user_med;
@@ -194,6 +190,10 @@ void bpt_init(void)
 	fw_version = sh_get_hub_algo_version();
 }
 
+int delay_ms_count = 0;
+uint8_t state_flag = 0;
+uint32_t curren_tick1 = 0;
+//extern struct v3_status v3status;
 void bpt_main(void)
 {
 	static int measurement_count = 0;
@@ -213,7 +213,13 @@ void bpt_main(void)
 				printLog("EXAMPLE USER MEASUREMENT IS STARTED , SETTING UP FOR CALIBRATION ...\r\n");
 
 				int status = 0;
-				wait_ms(1000);  // This delay may be reduced to 0 if the startup time of the host is slower than the startup of the MAX32664
+
+				//wait_ms(1000);  // This delay may be reduced to 0 if the startup time of the host is slower than the startup of the MAX32664
+				delay_ms_count++;
+				if(delay_ms_count < 11)
+					break;
+				else
+					delay_ms_count = 0;
 
 			  //set SPo2 coeffcients based on final form factor and hypoxia lab data.
 				status = sh_set_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, (uint8_t*) &example_user.general_const_spo2_coeffients[0], sizeof(example_user.general_const_spo2_coeffients), 5);
@@ -252,7 +258,10 @@ void bpt_main(void)
 						bptMesurementProgress = 0;
 						SH_Max3010x_stop(0);
 						calibrationTimer_stop();
-						appState =  ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+						appState =  ST_EXAMPLEUSER_DELAY_COUNT;//ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+						state_flag = 2;
+						delay_ms_count = 0;
+						curren_tick1 = sl_sleeptimer_get_tick_count();
 						printLog("EXAMPLE CALIBRATION MEASUREMENT DONE. SETTING UP FOR ESTIMATION ... \r\n");
 					}
 					else
@@ -271,14 +280,14 @@ void bpt_main(void)
 
 			case ST_EXAMPLEUSER_ESTIMATION_SETTINGS:
 			{
-				wait_ms(2000);
+				//wait_ms(2000);
 
 				int status = 0;
 				uint8_t cal_result[CAL_DATA_SIZE_BYTES + STATUS_OFFSET_BYTE ] = {0};
 
 			  //get calibration results. Alias of action taken by Command "get_cfg bpt cal_result" which prints calibration data to Console
 				status += sh_get_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_result[0], sizeof(cal_result), 30);
-                #if 1
+                #if 0
 				int idx = 1; /*skip status byte*/
 				while( idx < sizeof(cal_result) ){
 						printLog("%02X", cal_result[idx]);
@@ -286,6 +295,8 @@ void bpt_main(void)
 						if(idx%40 == 0)
 							printLog("\r\n");
 				}
+                #else
+					printLog("get calibration results.\r\n");
                 #endif
 			  //Copy as user calibration data
 				memcpy( &example_user.cal_data[0] , &cal_result[STATUS_OFFSET_BYTE] , CAL_DATA_SIZE_BYTES );
@@ -294,8 +305,22 @@ void bpt_main(void)
 
 				status = sh_set_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, (uint8_t*) &example_user.general_const_spo2_coeffients[0], sizeof(example_user.general_const_spo2_coeffients), 5);
 
-				wait_ms(1000);
 				if( status == 0x00 )
+				{
+					appState =  ST_EXAMPLEUSER_DELAY_COUNT;//ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+					state_flag = 4;
+					delay_ms_count = 0;
+					curren_tick1 = sl_sleeptimer_get_tick_count();
+				}
+				else
+					appState = ST_EXAMPLEUSER_FAILURE;
+			}
+			break;
+
+			case ST_EXAMPLEUSER_ESTIMATION_SETTINGS2:
+			{
+			  //wait_ms(1000);
+			  //if( status == 0x00 )
 				{
 #if 0
 				  //start BPT estimation , AGC CAN BE DISABLED
@@ -312,14 +337,17 @@ void bpt_main(void)
 						appState = ST_EXAMPLEUSER_FAILURE;
 					}
 #else
-					appState = ST_EXAMPLEUSER_ESTIMATION_STARTING;
+					appState = ST_EXAMPLEUSER_DELAY_COUNT;  //ST_EXAMPLEUSER_ESTIMATION_STARTING;
+					delay_ms_count = 0;
+					state_flag = 3;
+					curren_tick1 = sl_sleeptimer_get_tick_count();
 #endif
 
 				}
-				else
-				{
-					appState = ST_EXAMPLEUSER_FAILURE;
-				}
+				//else
+				//{
+				//	appState = ST_EXAMPLEUSER_FAILURE;
+				//}
 				measurement_count = 0;
 			}
 			break;
@@ -334,7 +362,7 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED \r\n");
+					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -345,68 +373,122 @@ void bpt_main(void)
 
 			case ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT:
 			{
-				/*SERIALOUT(" \r\n BPT prog= %d sys=%d dis=%d spo2=%d ", bptMesurementProgress,
-																		 bptMesurementSysPressure,
-																		 bptMesurementDiaPressure,
-																		 bptMesurementlBoodOxygen );
-				*/
 				if( bptMesurementProgress == BPT_CALIBRATION_PROCESSDONE_VAL)
 				{
+					curren_tick1 = sl_sleeptimer_get_tick_count();
 					measurement_count = 0;
 					calibrationTimer_stop();
+				    SH_Max3010x_stop(0);
+					delay_ms_count = 0;
+					state_flag = 2;                            //3
+					appState = ST_EXAMPLEUSER_DELAY_COUNT;
 				}
 				else
 				{
 					uint32_t count_tick = calibrationTimer_read();
 					if( count_tick > 60 )
 					{
-						appState =  ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT;//ST_EXAMPLEUSER_TIMEOUT;
+						appState =  ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT;                           //ST_EXAMPLEUSER_TIMEOUTaaaa;
 						break;
 					}
 					else
 					{
 
 					}
+					appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
 				}
-				appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
+				//appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
 			}
 			break;
 
-			case ST_EXAMPLEUSER_ESTIMATION_REMEASUREMENT:                                                         // Jason
+			case ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT:                                                         // Jason
 			{
+				curren_tick1 = sl_sleeptimer_get_tick_count();
 				bptMesurementProgress = 0;
 				calibrationTimer_stop();
 				SH_Max3010x_stop(0);
 				measurement_count++;
-				if(measurement_count > 1)
+				if(measurement_count > 2)
 				{
 					measurement_count = 0;
 					printLog("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Calibration. \r\n");
-					appState = ST_COMMAND_MODE;
+					appState = ST_EXAMPLEUSER_DELAY_COUNT;                     //Jason //ST_COMMAND_MODE;
+					delay_ms_count = 0;
+					state_flag = 1;
+					//wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
 				}
 				else
 				{
 					printLog("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Measurement = %d. \r\n", measurement_count);
-					appState = ST_EXAMPLEUSER_ESTIMATION_STARTING;//ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+					appState = ST_EXAMPLEUSER_DELAY_COUNT;     //ST_EXAMPLEUSER_ESTIMATION_STARTING;//ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+					delay_ms_count = 0;
+					state_flag = 0;
+					//wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
 				}
-				wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
 			}
 			break;
 
 			case ST_EXAMPLEUSER_TIMEOUT:
 			case ST_EXAMPLEUSER_FAILURE:
 			{
+				curren_tick1 = sl_sleeptimer_get_tick_count();
 				printLog("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
 			  //is_example_measurement_active =  false;
 				calibrationTimer_stop();
 				SH_Max3010x_stop(0);
-				appState = ST_COMMAND_MODE;
-				wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
+				appState = ST_EXAMPLEUSER_DELAY_COUNT;                     //Jason //ST_COMMAND_MODE;
+				delay_ms_count = 0;
+				state_flag = 1;
+				//wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
 			}
 			break;
+			case ST_EXAMPLEUSER_DELAY_COUNT:
+			{
+				uint16_t DELAY_COUNT = 20;
+				uint32_t diff = sl_sleeptimer_get_tick_count() - curren_tick1;
+				printLog("DELAY %d ms.......... \r\n", (int)sl_sleeptimer_tick_to_ms(diff));
+				delay_ms_count++;
+				if(state_flag == 4)
+					DELAY_COUNT = 8;
+				else
+					DELAY_COUNT = 10;
+				if(delay_ms_count > DELAY_COUNT)
+				{
+					delay_ms_count = 0;
+					if(state_flag == 1)
+						appState = ST_COMMAND_MODE;
+					else if(state_flag == 2)
+						appState = ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
+					else if(state_flag == 3)
+						appState = ST_EXAMPLEUSER_ESTIMATION_STARTING;
+					else if(state_flag == 4)
+						appState = ST_EXAMPLEUSER_ESTIMATION_SETTINGS2;
+					else if(state_flag == 0)
+						appState = ST_EXAMPLEUSER_ESTIMATION_STARTING;
+				}
+			}
+		    break;
 		}
 
-		wait_ms(2);
-		SH_Max3010x_data_report_execute();
+		//if(appState != ST_COMMAND_MODE)
+		//if(v3status.spp == 2)
+		{
+		  wait_ms(2);
+		  SH_Max3010x_data_report_execute();
+		}
 	}
 }
+
+void bpt_main_reset(void)
+{
+	curren_tick1 = sl_sleeptimer_get_tick_count();
+	printLog("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
+  //is_example_measurement_active =  false;
+	calibrationTimer_stop();
+	SH_Max3010x_stop(0);
+	appState = ST_EXAMPLEUSER_DELAY_COUNT;                     //Jason //ST_COMMAND_MODE;
+	delay_ms_count = 0;
+	state_flag = 1;
+}
+
+
