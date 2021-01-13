@@ -193,7 +193,7 @@ void bpt_init(void)
 int delay_ms_count = 0;
 uint8_t state_flag = 0;
 uint32_t curren_tick1 = 0;
-//extern struct v3_status v3status;
+extern struct v3_status v3status;
 void bpt_main(void)
 {
 	static int measurement_count = 0;

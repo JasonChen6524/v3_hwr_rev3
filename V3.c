@@ -4,6 +4,7 @@
  *  Created on: 4/19/2020
  *      Author: rgraczyk
  */
+ 
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
@@ -16,10 +17,10 @@
 #include "app.h"
 #include "mscflash.h"
 #include "MAX14676E.h"
-#include "SHComm.h"                 //Jason
 //#include "em_rmu.h"
 //#include "core_cm33.h"
 #include "em_usart.h"
+#include "SHComm.h"
 
 
 void v3_proc_message(union v3_message_UNION * pv3msgU);
@@ -80,10 +81,10 @@ void v3_init(void)
    SinOff();      // Disable I2S ints, stop generation of sine waves 
 
 //initialize the status message
-   v3status.magic      = V3_HDR_MAGIC;
-   v3status.cmd        = V3_CMD_STATUS;
-   v3status.len        = sizeof(v3status);
-   v3status.state      = V3_STATE_IDLE;
+   v3status.magic = V3_HDR_MAGIC;
+   v3status.cmd = V3_CMD_STATUS;
+   v3status.len = sizeof(v3status);
+   v3status.state = V3_STATE_IDLE;
    v3status.inithandle = V3_NO_HANDLE;    // No handle 
    
 // initialize v3erase message
@@ -186,6 +187,7 @@ U8  qSize, buftail, i;
 
 }
 
+
 void v3_log(char *buf)
 {
 U8 size;
@@ -242,6 +244,7 @@ static U16 otaflashaddr;
          v3_ack_handle(pv3msgU);
       break;
 
+
       case V3_CMD_MOD:
          memcpy(&v3combomod, pv3msgU, sizeof (v3combomod));   // copy message
          Intensity(v3combomod.inten);
@@ -255,10 +258,12 @@ static U16 otaflashaddr;
       v3status.inithandle = V3_NO_HANDLE;
       // Ack in V3 state loop when erase is complete
       break;
+      
       case V3_CMD_DATA:  // respond with Flash Data at handle
          spi_cmd_read(pv3msgU->v3msg.handle,pv3msgU);
          v3_XmitQ((U8*)pv3msgU, pv3msgU->v3msg.len);
       break;
+      
       case V3_CMD_INFO:
          if ( v3Handle!=V3_NO_HANDLE)
          {
@@ -272,7 +277,9 @@ static U16 otaflashaddr;
          v3_ack_nohandle((union v3_message_UNION*)&v3info);  // return initialize v3infor structure
          //printLog("INFO.REP %d\r\n", v3info.reports);
       break;
+
       case V3_CMD_SET:  // manufacturing variable setting command
+
       // initalize Processor user flash
          progdata.fw_major = V3_FW_MAJOR;  //update in case of already written SN
          progdata.fw_minor = V3_FW_MINOR;
@@ -284,6 +291,8 @@ static U16 otaflashaddr;
          v3_info_init();  // update v3info structure
          v3_ack_nohandle(pv3msgU);
       break;
+      
+      
       case V3_CMD_SLEEP:
       memcpy(&v3sleep, pv3msgU, sizeof (v3sleep));   // copy message
       v3_ack_handle(pv3msgU);
@@ -292,26 +301,26 @@ static U16 otaflashaddr;
       break;
 
       case V3_CMD_OTADAT:
-	  if (v3status.state != V3_STATE_OTA)
-	  {
-		 v3status.state = V3_STATE_OTA;
-		 v3Handle = V3_NO_HANDLE;
-		 v3status.inithandle = V3_NO_HANDLE;    // No handle
-		 otaflashaddr = 0;
-	  }
-	  spi_cmd_write(&otaflashaddr, pv3msgU); // SPI flash store the message at location otaflashaddr
-	  spi_cmd_read(otaflashaddr,pv3msgU);
-	  if (v3_get_sum( &v3msgU )) v3_ack_nohandle(pv3msgU);
-	  else v3_nack_msg( &v3msgU );  //checksum is not correct
-	  otaflashaddr++;
-
-	  // code stub to jump to reset vector of boot loader
-	  //if (v3msgU.v3otadat.address) = 0xFFFFFFFF - jump to bootloader entry tbd
-      break;
-
-      default:
-      break;
+      if (v3status.state != V3_STATE_OTA)
+      {
+         v3status.state = V3_STATE_OTA;
+         v3Handle = V3_NO_HANDLE; 
+         v3status.inithandle = V3_NO_HANDLE;    // No handle
+         otaflashaddr = 0;
+      }
+      spi_cmd_write(&otaflashaddr, pv3msgU); // SPI flash store the message at location otaflashaddr
+      spi_cmd_read(otaflashaddr,pv3msgU);
+      if (v3_get_sum( &v3msgU )) v3_ack_nohandle(pv3msgU);
+      else v3_nack_msg( &v3msgU );  //checksum is not correct 
+      otaflashaddr++;
       
+      // code stub to jump to reset vector of boot loader
+      //if (v3msgU.v3otadat.address) = 0xFFFFFFFF - jump to bootloader entry tbd
+      break;
+
+     default:
+     break;
+
    }
 
 }
@@ -390,15 +399,15 @@ static U8 led_sm = LED_SM_START, wait = 0;
    v3status.time++;
    Seconds++;
 
-   v3status.conn  = ExpGetPins(); // get pins from I/O expander
-   v3status.conn &= ~0x13;        // !!! TEMPORARY TEST CODE for V3, REV 2
+   v3status.conn = ExpGetPins(); // get pins from I/O expander
+   v3status.conn &= ~0x13; // !!! TEMPORARY TEST CODE for V3, REV 2
    // Will use I2C read register to set this bit in the future OR, break out to another v3status variable.
    //Also added electrode cable loopback pins because new cables need to be made
    
-   v3status.statusb  = max14676_GetStatusB();  // Get PMIC registers for reporting
+   v3status.statusb = max14676_GetStatusB();  // Get PMIC registers for reporting
    v3status.batvcell = max14676_GetBatteryChargeVoltage();
-   v3status.statusa  = max14676_GetStatusA();
-   v3status.crate    = max14676_GetBatteryCRATE();
+   v3status.statusa = max14676_GetStatusA();
+   v3status.crate = max14676_GetBatteryCRATE();
 
 // When in maint timer done state, will not exit until battery drains 0.070V from reg point (4.2V)
 // So set charge = 100 until state is exited
@@ -596,6 +605,7 @@ v3combo.combonum = 0;
             v3status.state = v3_state_save; 
          }
       break;
+
    }
    
 // periodically check if an erase is finished then ACK
@@ -604,24 +614,23 @@ v3combo.combonum = 0;
       spi_erase_active = false;
       v3_ack_nohandle((union v3_message_UNION *) &v3erase);  // ack erase command
    }
-
-
+      
    v3status.temp0 = Temperature(MAX30208A_ADR); // read temperature sensor A
- //TEMPORARY - populate second sensor field with first until second sensor HW is available
- //v3status.temp1 = v3status.temp0;
+   // TEMPORARY - populate second sensor field with first until second sensor HW is available
+   //v3status.temp1 = v3status.temp0; 
    v3status.temp1 = Temperature(MAX30208B_ADR); // read temperature sensor B
 
-#if 0
-   printLog("Temp A %d\r\n",  v3status.temp0/20);
-   printLog("Temp B %d\r\n",  v3status.temp1/20);
-   printLog("CHRG %d\r\n",    v3status.batsoc);
-   printLog("VOLT %d\r\n",    v3status.batvcell);
- //printLog("STAT %d\r\n",    v3status.statusb);
-   printLog("RATE %d\r\n",    v3status.crate);
+#if 1
+   printLog("Temp A %d\r\n",v3status.temp0/20);
+   printLog("Temp B %d\r\n",v3status.temp1/20);
+   printLog("CHRG %d\r\n", v3status.batsoc);
+   printLog("VOLT %d\r\n", v3status.batvcell);
+   //printLog("STAT %d\r\n", v3status.statusb);
+   printLog("RATE %d\r\n", v3status.crate);
    printLog("STATA 0x%X\r\n", (U16)v3status.statusa);
-   printLog("STATB 0x%X\r\n", (U16)v3status.statusb);
+   printLog("STATB 0x%X\r\n", (U16)v3status.statusb);   
 
-   printLog("USART %d\r\n",sinosc[0].sample);
+   //printLog("USART %d\r\n",sinosc[0].sample);
 #endif
 
 #if 1
@@ -629,10 +638,8 @@ v3combo.combonum = 0;
    v3status.bio_status = calibrationTimer_read();
 #endif
 
-   if (v3combo.awakesec)
-	   v3_ack_handle((union v3_message_UNION*)&v3status);                // Send status and store message, unsolicited
-   else
-	   v3_ack_nohandle((union v3_message_UNION*)&v3status);              // Send status message, unsolicited
+   if (v3combo.awakesec) v3_ack_handle((union v3_message_UNION*)&v3status);  // Send status and store message, unsolicited 
+      else v3_ack_nohandle((union v3_message_UNION*)&v3status);  // Send status message, unsolicited
 
 
 //LED STATE MACHINE

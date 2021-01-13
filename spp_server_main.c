@@ -62,9 +62,8 @@ enum
 //ibeacon setup call
 void bcnSetupAdvBeaconing(void);
 
-extern void bpt_main(void);       // Temporarily put here, belongs elsewhere
+extern void bpt_main(void); // Temporarily put here, belongs elsewhere
 extern void bpt_main_reset(void); // Added by Jason, 2021.01.07
-
 
 // Eddystone Advertising data
 #define EDDYSTONE_DATA_LEN (23)
@@ -167,7 +166,7 @@ U8 sectic = TIC_TIMER_PERSEC;
     /* Event pointer for handling events */
     struct gecko_cmd_packet* evt;
 
-    //if(v3status.spp == 2) bpt_main();   // For Bio-Sensor estimation -
+   //bpt_main();   // For Bio-Sensor estimation -
     
     if(_main_state == STATE_SPP_MODE) {
     	/* If SPP data mode is active, use non-blocking gecko_peek_event() */
@@ -329,15 +328,16 @@ U8 sectic = TIC_TIMER_PERSEC;
          {
             v3_state(); // sequence main V3 state machine
             sectic = 0;
-            //bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
          }
 
          ledseq();  // step the LED player
          fbseq(); // Step the feedback player (Haptic and buzzer)
-         if((v3status.spp == STATE_CONNECTED)||(v3status.spp == STATE_SPP_MODE))
-        	 bpt_main();   //Jason // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
-         else
-        	 bpt_main_reset();
+         
+         //Jason // For Bio-Sensor estimation - 
+         if((v3status.spp == STATE_CONNECTED)||(v3status.spp == STATE_SPP_MODE))  bpt_main();
+         else  bpt_main_reset();
+         
+         //bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
 
          if (v3sleep.sleepsec) 
          {
