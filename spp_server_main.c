@@ -287,12 +287,12 @@ U8 sectic = TIC_TIMER_PERSEC;
                }
 
     		}
-    	}
-    }
-    break;
+    	 }
+      }
+      break;
 
-   case gecko_evt_gatt_server_attribute_value_id:
-    {
+      case gecko_evt_gatt_server_attribute_value_id:
+      {
     	 for(i=0;i<evt->data.evt_gatt_server_attribute_value.value.len;i++) {
     		 //USART_Tx(RETARGET_UART, evt->data.evt_gatt_server_attribute_value.value.data[i]);
           v3CommBuf.rx[v3CommBuf.rxhead++]  = evt->data.evt_gatt_server_attribute_value.value.data[i];
@@ -302,66 +302,67 @@ U8 sectic = TIC_TIMER_PERSEC;
              break;
           }
     	 
-       }
+         }
 
     	 _sCounters.num_pack_received++;
     	 _sCounters.num_bytes_received += evt->data.evt_gatt_server_attribute_value.value.len;
-    }
-    break;
-
-     /* Software Timer event */
-   case gecko_evt_hardware_soft_timer_id:
-
-      switch (evt->data.evt_hardware_soft_timer.handle) 
-      {
-         //case TIC_TIMER_HANDLE:  // currently once per second
-            //v3_state(); // sequence main V3 state machine
-         //break;
-
-         case OS_TIMER_HANDLE:
-         //SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
-         
-         // Keep v3_state call before LED and feedback calls to make the response more immediate
-         sectic++;
-         
-         if (sectic >= TIC_TIMER_PERSEC)
-         {
-            v3_state(); // sequence main V3 state machine
-            sectic = 0;
-         }
-
-         ledseq();  // step the LED player
-         fbseq(); // Step the feedback player (Haptic and buzzer)
-         
-         //Jason // For Bio-Sensor estimation - 
-         if((v3status.spp == STATE_CONNECTED)||(v3status.spp == STATE_SPP_MODE))  bpt_main();
-         else  bpt_main_reset();
-         
-         //bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
-
-         if (v3sleep.sleepsec) 
-         {
-        	   v3_state(); // sequence main V3 state machine
-        	   gecko_cmd_hardware_set_soft_timer(0, OS_TIMER_HANDLE, false);  // turn off timer
-               gecko_cmd_hardware_set_soft_timer((v3sleep.sleepsec*TIC_TIMER_CONST), OS_TIMER_HANDLE, false);  // set new sleep timer
-               v3sleep.sleepsec = 0;  // clear flag
-               sectic = TIC_TIMER_PERSEC;   // Force state machine to be called next entry     
-         }
-
-         //SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
-         break;
-
-         default:
-         break;
       }
-   break;
+      break;
 
-   //break;
+      /* Software Timer event */
+      case gecko_evt_hardware_soft_timer_id:
+      {
+		  switch (evt->data.evt_hardware_soft_timer.handle)
+		  {
+			 //case TIC_TIMER_HANDLE:  // currently once per second
+				//v3_state(); // sequence main V3 state machine
+			 //break;
 
-   default:
-   break;
-   }
-  }
+			 case OS_TIMER_HANDLE:
+			 //SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
+
+			 // Keep v3_state call before LED and feedback calls to make the response more immediate
+			 sectic++;
+
+			 if (sectic >= TIC_TIMER_PERSEC)
+			 {
+				v3_state(); // sequence main V3 state machine
+				sectic = 0;
+			 }
+
+			 ledseq();  // step the LED player
+			 fbseq(); // Step the feedback player (Haptic and buzzer)
+
+			 //Jason // For Bio-Sensor estimation -
+			 if((v3status.spp == STATE_CONNECTED)||(v3status.spp == STATE_SPP_MODE))  bpt_main();
+			 else  bpt_main_reset();
+
+			 //bpt_main();   // For Bio-Sensor estimation - Jason had this in the main while(1) loop.  Should go here?  Need to test
+
+			 if (v3sleep.sleepsec)
+			 {
+				   v3_state(); // sequence main V3 state machine
+				   gecko_cmd_hardware_set_soft_timer(0, OS_TIMER_HANDLE, false);  // turn off timer
+				   gecko_cmd_hardware_set_soft_timer((v3sleep.sleepsec*TIC_TIMER_CONST), OS_TIMER_HANDLE, false);  // set new sleep timer
+				   v3sleep.sleepsec = 0;  // clear flag
+				   sectic = TIC_TIMER_PERSEC;   // Force state machine to be called next entry
+			 }
+
+			 //SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
+			 break;
+
+			 default:
+			 break;
+		  }
+      }
+	  break;
+
+    //break;
+
+      default:
+      break;
+   }//switch (BGLIB_MSG_ID(evt->header))
+  }//while(1)
 }
 
 void bcnSetupAdvBeaconing(void)
@@ -438,3 +439,4 @@ void bcnSetupAdvBeaconing(void)
   gecko_cmd_le_gap_start_advertising(HANDLE_IBEACON, le_gap_user_data, le_gap_non_connectable);
 
 }
+
